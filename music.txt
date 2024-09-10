@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin-top: 20px;
+            color: #333;
+        }
+        .language-tabs {
+            margin: 20px;
+        }
+        .language-tabs button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        .language-tabs button.active,
+        .language-tabs button:hover {
+            background-color: #0056b3;
+        }
+        .playlist {
+            display: none;
+            margin-top: 20px;
+        }
+        .playlist h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .song-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .song-list li {
+            cursor: pointer;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin: 5px 0;
+            transition: background-color 0.3s ease;
+        }
+        .song-list li:hover {
+            background-color: #e2e6ea;
+        }
+        .controls {
+            margin: 20px;
+        }
+        .controls button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        .controls button:hover {
+            background-color: #0056b3;
+        }
+        #player {
+            margin: 20px;
+        }
+        #saved-songs, #liked-songs {
+            margin: 20px;
+        }
+        .search-bar {
+            margin: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .search-bar input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Music Player</h1>
+
+    <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Search for songs...">
+    </div>
+
+    <div class="language-tabs">
+        <button id="tamil-tab" aria-label="Tamil Playlist">Tamil</button>
+        <button id="english-tab" aria-label="English Playlist">English</button>
+        <button id="hindi-tab" aria-label="Hindi Playlist">Hindi</button>
+        <button id="malayalam-tab" aria-label="Malayalam Playlist">Malayalam</button>
+        <button id="telugu-tab" aria-label="Telugu Playlist">Telugu</button>
+    </div>
+
+    <div id="playlists">
+        <div id="tamil-playlist" class="playlist">
+            <h3>Tamil Playlist</h3>
+            <div class="song-list">
+                <ul></ul>
+            </div>
+        </div>
+        <div id="english-playlist" class="playlist">
+            <h3>English Playlist</h3>
+            <div class="song-list">
+                <ul></ul>
+            </div>
+        </div>
+        <div id="hindi-playlist" class="playlist">
+            <h3>Hindi Playlist</h3>
+            <div class="song-list">
+                <ul></ul>
+            </div>
+        </div>
+        <div id="malayalam-playlist" class="playlist">
+            <h3>Malayalam Playlist</h3>
+            <div class="song-list">
+                <ul></ul>
+            </div>
+        </div>
+        <div id="telugu-playlist" class="playlist">
+            <h3>Telugu Playlist</h3>
+            <div class="song-list">
+                <ul></ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="prev-btn" aria-label="Previous Song">⏮️</button>
+        <button id="play-pause-btn" aria-label="Play/Pause">▶️</button>
+        <button id="next-btn" aria-label="Next Song">⏭️</button>
+        <button id="loop-btn" aria-label="Loop">🔁</button>
+        <button id="save-btn" aria-label="Save Song">💾</button>
+        <button id="like-btn" aria-label="Like Song">❤️</button>
+    </div>
+
+    <div id="player">
+        <h2 id="song-name">Select a song</h2>
+        <p id="song-author"></p>
+        <audio id="audio-player" controls aria-label="Audio Player"></audio>
+    </div>
+
+    <div id="saved-songs">
+        <h3>Saved Songs</h3>
+        <ul id="saved-songs-list"></ul>
+    </div>
+
+    <div id="liked-songs">
+        <h3>Liked Songs</h3>
+        <ul id="liked-songs-list"></ul>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const audioPlayer = document.getElementById('audio-player');
+            const songNameElem = document.getElementById('song-name');
+            const songAuthorElem = document.getElementById('song-author');
+            const playPauseBtn = document.getElementById('play-pause-btn');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const loopBtn = document.getElementById('loop-btn');
+            const saveBtn = document.getElementById('save-btn');
+            const likeBtn = document.getElementById('like-btn');
+            const savedSongsList = document.getElementById('saved-songs-list');
+            const likedSongsList = document.getElementById('liked-songs-list');
+            const searchInput = document.getElementById('search-input');
+
+            let currentSongIndex = -1;
+            let savedSongs = [];
+            let likedSongs = [];
+            let currentPlaylist = [];
+            
+            const songs = [
+                // Tamil Songs
+                { src: 'https://example.com/path/to/vaathi-coming.mp3', name: 'Vaathi Coming', author: 'Anirudh Ravichander', lang: 'tamil' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3', name: 'Rowdy Baby', author: 'Anirudh Ravichander', lang: 'tamil' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3', name: 'Vikram Vedha', author: 'Sam C. S.', lang: 'tamil' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3', name: 'Kutti Story', author: 'Thaman S', lang: 'tamil' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3', name: 'Sodakku', author: 'Nakash Aziz', lang: 'tamil' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3', name: 'Surviva', author: 'Anirudh Ravichander', lang: 'tamil' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3', name: 'Oru Kuchi Oru Kulphi', author: 'Devi Sri Prasad', lang: 'tamil' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3', name: 'Enna Solla Pogirai', author: 'A.R. Rahman', lang: 'tamil' },
+
+                // English Songs
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-01.mp3', name: 'Shape of You', author: 'Ed Sheeran', lang: 'english' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-02.mp3', name: 'Blinding Lights', author: 'The Weeknd', lang: 'english' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-03.mp3', name: 'Levitating', author: 'Dua Lipa', lang: 'english' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-04.mp3', name: 'Uptown Funk', author: 'Mark Ronson ft. Bruno Mars', lang: 'english' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-05.mp3', name: 'Rolling in the Deep', author: 'Adele', lang: 'english' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-06.mp3', name: 'Someone Like You', author: 'Adele', lang: 'english' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-07.mp3', name: 'Bad Guy', author: 'Billie Eilish', lang: 'english' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-08.mp3', name: 'Happier', author: 'Marshmello ft. Bastille', lang: 'english' },
+
+                // Hindi Songs
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-09.mp3', name: 'Tum Hi Ho', author: 'Arijit Singh', lang: 'hindi' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3', name: 'Channa Mereya', author: 'Arijit Singh', lang: 'hindi' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3', name: 'Tujh Mein Rab Dikhta Hai', author: 'Roop Kumar Rathod', lang: 'hindi' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3', name: 'Kabira', author: 'Arijit Singh', lang: 'hindi' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3', name: 'Dil Dhadakne Do', author: 'Priyanka Chopra', lang: 'hindi' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3', name: 'Phir Mohabbat', author: 'Arijit Singh', lang: 'hindi' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3', name: 'Raabta', author: 'Arijit Singh', lang: 'hindi' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3', name: 'Jeene Laga Hoon', author: 'Yasser Desai', lang: 'hindi' },
+
+                // Malayalam Songs
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3', name: 'Entammede Jimikki Kammal', author: 'Vineeth Sreenivasan', lang: 'malayalam' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-18.mp3', name: 'Jimmiki Kammal', author: 'Vineeth Sreenivasan', lang: 'malayalam' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-19.mp3', name: 'Malare', author: 'Vineeth Sreenivasan', lang: 'malayalam' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-20.mp3', name: 'Pavizhamalli', author: 'Sudeep Kumar', lang: 'malayalam' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-21.mp3', name: 'Mazhavil Vannull', author: 'Yazin Nizar', lang: 'malayalam' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-22.mp3', name: 'Manikya Malaraya Poovi', author: 'Vineeth Sreenivasan', lang: 'malayalam' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-23.mp3', name: 'Thaarakame', author: 'Vineeth Sreenivasan', lang: 'malayalam' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-24.mp3', name: 'Kannaana Kanney', author: 'Sid Sriram', lang: 'malayalam' },
+
+                // Telugu Songs
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-25.mp3', name: 'Butta Bomma', author: 'Armaan Malik', lang: 'telugu' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-26.mp3', name: 'Ramuloo Ramulaa', author: 'Anurag Kulkarni', lang: 'telugu' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-27.mp3', name: 'Vachindamma', author: 'Sid Sriram', lang: 'telugu' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-28.mp3', name: 'Samajavaragamana', author: 'Sid Sriram', lang: 'telugu' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-29.mp3', name: 'Neeli Neeli Aakasam', author: 'Karthik', lang: 'telugu' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-30.mp3', name: 'Kanulu Kanulanu Dochayante', author: 'Sid Sriram', lang: 'telugu' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-31.mp3', name: 'Jaanu Jaanu', author: 'Anurag Kulkarni', lang: 'telugu' },
+                { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-32.mp3', name: 'Reddy Ippudaa', author: 'Vijay Prakash', lang: 'telugu' }
+            ];
+
+            // Function to load playlist
+            function loadPlaylist(lang) {
+                const playlist = document.getElementById(`${lang}-playlist`).querySelector('.song-list ul');
+                playlist.innerHTML = '';
+                currentPlaylist = songs.filter(song => song.lang === lang);
+                currentPlaylist.forEach((song, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = song.name;
+                    li.dataset.index = index;
+                    li.addEventListener('click', () => playSong(index));
+                    playlist.appendChild(li);
+                });
+            }
+
+            // Function to show playlist
+            function showPlaylist(lang) {
+                document.querySelectorAll('.playlist').forEach(p => p.style.display = 'none');
+                const activeTab = document.getElementById(`${lang}-tab`);
+                document.getElementById(`${lang}-playlist`).style.display = 'block';
+                document.querySelectorAll('.language-tabs button').forEach(btn => btn.classList.remove('active'));
+                activeTab.classList.add('active');
+            }
+
+            // Function to play song
+            function playSong(index) {
+                const song = currentPlaylist[index];
+                audioPlayer.src = song.src;
+                songNameElem.textContent = song.name;
+                songAuthorElem.textContent = song.author;
+                audioPlayer.play();
+                currentSongIndex = index;
+            }
+
+            // Event listeners for language buttons
+            document.getElementById('tamil-tab').addEventListener('click', () => {
+                showPlaylist('tamil');
+                loadPlaylist('tamil');
+            });
+            document.getElementById('english-tab').addEventListener('click', () => {
+                showPlaylist('english');
+                loadPlaylist('english');
+            });
+            document.getElementById('hindi-tab').addEventListener('click', () => {
+                showPlaylist('hindi');
+                loadPlaylist('hindi');
+            });
+            document.getElementById('malayalam-tab').addEventListener('click', () => {
+                showPlaylist('malayalam');
+                loadPlaylist('malayalam');
+            });
+            document.getElementById('telugu-tab').addEventListener('click', () => {
+                showPlaylist('telugu');
+                loadPlaylist('telugu');
+            });
+
+            // Play/Pause button
+            playPauseBtn.addEventListener('click', () => {
+                if (audioPlayer.paused) {
+                    audioPlayer.play();
+                    playPauseBtn.textContent = '⏸️';
+                } else {
+                    audioPlayer.pause();
+                    playPauseBtn.textContent = '▶️';
+                }
+            });
+
+            // Previous button
+            prevBtn.addEventListener('click', () => {
+                if (currentSongIndex > 0) {
+                    playSong(currentSongIndex - 1);
+                }
+            });
+
+            // Next button
+            nextBtn.addEventListener('click', () => {
+                if (currentSongIndex < currentPlaylist.length - 1) {
+                    playSong(currentSongIndex + 1);
+                }
+            });
+
+            // Loop button
+            loopBtn.addEventListener('click', () => {
+                audioPlayer.loop = !audioPlayer.loop;
+                loopBtn.textContent = audioPlayer.loop ? '🔁 (On)' : '🔁 (Off)';
+            });
+
+            // Save button
+            saveBtn.addEventListener('click', () => {
+                if (currentSongIndex !== -1) {
+                    const song = currentPlaylist[currentSongIndex];
+                    if (!savedSongs.includes(song)) {
+                        savedSongs.push(song);
+                        const li = document.createElement('li');
+                        li.textContent = song.name;
+                        savedSongsList.appendChild(li);
+                    }
+                }
+            });
+
+            // Like button
+            likeBtn.addEventListener('click', () => {
+                if (currentSongIndex !== -1) {
+                    const song = currentPlaylist[currentSongIndex];
+                    if (!likedSongs.includes(song)) {
+                        likedSongs.push(song);
+                        const li = document.createElement('li');
+                        li.textContent = song.name;
+                        likedSongsList.appendChild(li);
+                    }
+                }
+            });
+
+            // Search functionality
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.toLowerCase();
+                document.querySelectorAll('.song-list li').forEach(li => {
+                    const songName = li.textContent.toLowerCase();
+                    li.style.display = songName.includes(query) ? 'block' : 'none';
+                });
+            });
+
+            // Initialize by showing Tamil playlist
+            showPlaylist('tamil');
+            loadPlaylist('tamil');
+        });
+    </script>
+</body>
+</html>
